@@ -147,8 +147,10 @@ class TestPolicyManagementAndUpload:
 
     def test_upload_oversized_file(self):
         """Uploading a file exceeding MAX_UPLOAD_SIZE_MB is rejected with 400."""
-        with patch("apps.documents.validators.MAX_UPLOAD_SIZE_MB", 1):
-            with patch("apps.documents.validators.MAX_UPLOAD_SIZE_BYTES", 100):
+        with (
+            patch("apps.documents.validators.MAX_UPLOAD_SIZE_MB", 1),
+            patch("apps.documents.validators.MAX_UPLOAD_SIZE_BYTES", 100),
+        ):
                 oversized_pdf = SimpleUploadedFile(
                     name="large.pdf",
                     content=b"%PDF-1.4" + b"X" * 200,

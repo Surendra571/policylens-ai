@@ -22,13 +22,9 @@ class BaseExtractedItem(BaseModel):
 class CoverageItem(BaseExtractedItem):
     """Inpatient hospitalization, day care, road ambulance, organ donor expenses, etc."""
 
-    pass
-
 
 class ExclusionItem(BaseExtractedItem):
     """Standard exclusions, permanent exclusions, or un-covered conditions."""
-
-    pass
 
 
 class WaitingPeriod(BaseExtractedItem):
@@ -52,37 +48,25 @@ class Limit(BaseExtractedItem):
 class Condition(BaseExtractedItem):
     """General terms, renewal terms, cancellation policies, free-look period, disclosure norms."""
 
-    pass
-
 
 class ClaimRequirement(BaseExtractedItem):
     """Intimation timeline (e.g. 24 hours), document submission (e.g. 15-30 days), TPA details."""
-
-    pass
 
 
 class EligibilityItem(BaseExtractedItem):
     """Entry age, maximum renewal age, vehicle eligibility, family relationship rules."""
 
-    pass
-
 
 class RenewalItem(BaseExtractedItem):
     """Lifelong renewability, grace period, portability, migration rights."""
-
-    pass
 
 
 class CancellationItem(BaseExtractedItem):
     """Cancellation terms, free-look period, surrender conditions, premium refund grid."""
 
-    pass
-
 
 class OtherClauseItem(BaseExtractedItem):
     """Special endorsements, definitions, statutory notices, or unclassified valid policy terms."""
-
-    pass
 
 
 class PolicyMetadata(BaseModel):

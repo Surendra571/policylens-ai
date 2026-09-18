@@ -16,12 +16,10 @@ class BaseLLMClient(ABC):
     @abstractmethod
     def generate(self, prompt: str, **kwargs) -> str:
         """Generate unstructured text from prompt."""
-        pass
 
     @abstractmethod
     def generate_structured(self, prompt: str, schema: type[T], **kwargs) -> T:
         """Generate structured data strictly validated against a Pydantic schema."""
-        pass
 
 
 class MockLLMClient(BaseLLMClient):

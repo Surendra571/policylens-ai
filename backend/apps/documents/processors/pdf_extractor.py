@@ -184,9 +184,7 @@ def extract_pages_from_pdf(
         doc.close()
 
     # Determine document quality classification
-    if total_pages == 0:
-        doc_quality = Document.DocumentQuality.UNREADABLE
-    elif total_text_len == 0:
+    if total_pages == 0 or total_text_len == 0:
         doc_quality = Document.DocumentQuality.UNREADABLE
     elif ocr_page_count == total_pages:
         doc_quality = Document.DocumentQuality.SCANNED_PDF

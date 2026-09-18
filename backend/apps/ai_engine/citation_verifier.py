@@ -10,8 +10,6 @@ logger = logging.getLogger(__name__)
 class CitationIntegrityError(Exception):
     """Raised when a citation fails integrity or verification checks."""
 
-    pass
-
 
 class CitationVerifier:
     """

@@ -9,8 +9,6 @@ from .schemas import PolicyAnalysis
 class ExtractionValidationError(Exception):
     """Raised when extracted output is malformed, missing fields, or contains unsupported claims."""
 
-    pass
-
 
 def normalize_for_matching(text: str) -> str:
     """Normalize whitespace and punctuation for robust substring verification."""

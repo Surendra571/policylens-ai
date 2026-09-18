@@ -3,3 +3,14 @@ target-version = "py312"
 exclude = [
     "*/migrations/*.py",
 ]
+
+[tool.ruff.lint]
+ignore = [
+    "RUF012", # Mutable default value for class attribute (standard in Django/DRF)
+    "DTZ007", # Naive datetime constructed using strptime without %z
+    "RUF100", # Unused noqa directive
+    "SIM117", # Nested with statements
+    "SIM114", # Combine if branches
+    "RUF059", # Unused unpacked variable
+    "PIE790", # Unnecessary pass statement in abstract class / docstring-only class
+]

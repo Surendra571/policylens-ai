@@ -83,7 +83,7 @@ class TestCitationIntegrity:
     """Test suite validating strict citation verification, anti-fabrication, and source immutability."""
 
     def test_valid_citation_resolves_and_enriches_metadata(self, policy_bundle):
-        policy, doc, page_18, chunk_18 = policy_bundle
+        policy, doc, _page_18, chunk_18 = policy_bundle
 
         raw_citation = {
             "chunk_id": str(chunk_18.id),
@@ -103,7 +103,7 @@ class TestCitationIntegrity:
         assert verified["verified"] is True
 
     def test_fabricated_page_number_rejected(self, policy_bundle):
-        policy, doc, page_18, chunk_18 = policy_bundle
+        policy, _doc, _page_18, chunk_18 = policy_bundle
 
         # AI attempts to claim the clause is on fake page 99
         fabricated_citation = {
@@ -118,7 +118,7 @@ class TestCitationIntegrity:
 
     def test_cross_policy_citation_rejected(self, policy_bundle, foreign_policy_bundle):
         policy_a, _, _, _ = policy_bundle
-        policy_b, _, _, chunk_b = foreign_policy_bundle
+        _policy_b, _, _, chunk_b = foreign_policy_bundle
 
         # Attempt to cite Policy B's chunk under Policy A
         cross_policy_citation = {
@@ -143,7 +143,7 @@ class TestCitationIntegrity:
         assert verified is None
 
     def test_rag_pipeline_filters_unresolved_citations(self, policy_bundle):
-        policy, doc, page_18, chunk_18 = policy_bundle
+        policy, doc, _page_18, chunk_18 = policy_bundle
 
         pipeline = PolicyRAGPipeline()
         res = pipeline.answer_question(

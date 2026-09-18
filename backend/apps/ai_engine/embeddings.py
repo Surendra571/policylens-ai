@@ -14,12 +14,10 @@ class BaseEmbeddingClient(ABC):
     @abstractmethod
     def embed_text(self, text: str) -> list[float]:
         """Generate an embedding vector for a single string."""
-        pass
 
     @abstractmethod
     def embed_batch(self, texts: list[str]) -> list[list[float]]:
         """Generate embedding vectors for a batch of strings."""
-        pass
 
 
 class MockEmbeddingClient(BaseEmbeddingClient):

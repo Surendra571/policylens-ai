@@ -9,7 +9,10 @@ from apps.ai_engine.schemas import (
     Limit,
     PolicyAnalysis,
 )
-from apps.ai_engine.validators import ExtractionValidationError, validate_structured_output
+from apps.ai_engine.validators import (
+    ExtractionValidationError,
+    validate_structured_output,
+)
 from apps.clauses.models import Clause
 from apps.documents.models import Document, DocumentChunk, DocumentPage
 from apps.policies.models import Policy

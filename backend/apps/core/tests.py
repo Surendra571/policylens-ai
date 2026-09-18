@@ -69,7 +69,11 @@ def test_embedding_invalid_dimension_rejection():
 
 @pytest.mark.django_db
 def test_throttling_rates_configured():
-    from apps.core.throttles import DocumentUploadThrottle, PolicyAnalysisThrottle, PolicyChatThrottle
+    from apps.core.throttles import (
+        DocumentUploadThrottle,
+        PolicyAnalysisThrottle,
+        PolicyChatThrottle,
+    )
 
     assert DocumentUploadThrottle.scope == "document_upload"
     assert PolicyAnalysisThrottle.scope == "policy_analysis"
