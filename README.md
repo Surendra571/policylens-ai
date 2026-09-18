@@ -5,7 +5,6 @@
 
 ---
 
-[![CI Build](https://github.com/Surendra571/policylens-ai/actions/workflows/ci.yml/badge.svg)](https://github.com/Surendra571/policylens-ai/actions/workflows/ci.yml)
 [![Python 3.12](https://img.shields.io/badge/Python-3.12-3776ab?logo=python&logoColor=white)](https://www.python.org/)
 [![Django 5.2](https://img.shields.io/badge/Django-5.2-092e20?logo=django&logoColor=white)](https://www.djangoproject.com/)
 [![DRF 3.15+](https://img.shields.io/badge/DRF-3.15+-red.svg)](https://www.django-rest-framework.org/)
@@ -454,9 +453,6 @@ The `CitationVerifier` (`apps/ai_engine/citation_verifier.py`) is the core anti-
 
 ```
 policylens-ai/
-├── .github/
-│   └── workflows/
-│       └── ci.yml               # GitHub Actions CI pipeline (Ruff, Pytest, Frontend)
 ├── backend/
 │   ├── apps/
 │   │   ├── accounts/            # User authentication & JWT
