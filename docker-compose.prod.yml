@@ -1,0 +1,53 @@
+# ==============================================================================
+# PolicyLens AI - Production Docker Compose Override
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+# ==============================================================================
+
+services:
+  postgres:
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "3"
+
+  redis:
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  backend:
+    environment:
+      DJANGO_DEBUG: "False"
+      SECURE_SSL_REDIRECT: "False" # Set to True if TLS is terminated directly or in proxy
+      SESSION_COOKIE_SECURE: "True"
+      CSRF_COOKIE_SECURE: "True"
+    command: ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "3", "--threads", "2", "--timeout", "120", "--access-logfile", "-", "--error-logfile", "-"]
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+  celery_worker:
+    environment:
+      DJANGO_DEBUG: "False"
+    command: ["celery", "-A", "config", "worker", "-l", "info", "--concurrency=4", "--max-tasks-per-child=100"]
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+  frontend:
+    ports:
+      - "80:80"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "3"
+

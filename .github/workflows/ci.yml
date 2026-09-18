@@ -1,0 +1,166 @@
+name: PolicyLens AI CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ============================================================================
+  # Job 1: Backend Quality, Migrations, and Comprehensive Tests
+  # ============================================================================
+  backend:
+    name: Backend Lint, Checks & Tests
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_DB: policylens_db
+          POSTGRES_USER: policylens_user
+          POSTGRES_PASSWORD: policylens_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DJANGO_SECRET_KEY: test-secret-key-for-github-actions-ci-pipeline-only
+      DJANGO_DEBUG: "False"
+      DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1,backend
+      POSTGRES_DB: policylens_db
+      POSTGRES_USER: policylens_user
+      POSTGRES_PASSWORD: policylens_password
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: 5432
+      REDIS_URL: redis://localhost:6379/0
+      CELERY_BROKER_URL: redis://localhost:6379/0
+      CELERY_RESULT_BACKEND: redis://localhost:6379/0
+      LLM_PROVIDER: mock
+      USE_SQLITE: "True"
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install System Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libpq-dev \
+            tesseract-ocr \
+            tesseract-ocr-eng
+
+      - name: Install Python Dependencies & Linters
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt
+          pip install ruff
+
+      - name: Run Backend Linting (Ruff)
+        working-directory: backend
+        run: |
+          ruff check apps/
+
+      - name: Run Django System Checks
+        working-directory: backend
+        run: |
+          python manage.py check
+
+      - name: Run Migrations Consistency Check
+        working-directory: backend
+        run: |
+          python manage.py makemigrations --check --dry-run
+
+      - name: Run Comprehensive Test Suite with Coverage
+        working-directory: backend
+        run: |
+          pytest --cov=apps --cov-report=term-missing --cov-report=xml -v
+
+  # ============================================================================
+  # Job 2: Frontend Typecheck and Production Build
+  # ============================================================================
+  frontend:
+    name: Frontend Typecheck & Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install Frontend Dependencies
+        working-directory: frontend
+        run: |
+          npm ci
+
+      - name: Run TypeScript Type Check
+        working-directory: frontend
+        run: |
+          npx tsc --noEmit
+
+      - name: Build Production Frontend Bundle
+        working-directory: frontend
+        run: |
+          npm run build
+
+  # ============================================================================
+  # Job 3: Multi-Container Docker Build Verification
+  # ============================================================================
+  docker-build:
+    name: Docker Images Build Verification
+    runs-on: ubuntu-latest
+    needs: [backend, frontend]
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Copy Sample Environment for Compose Validation
+        run: |
+          cp .env.example .env
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Validate Docker Compose Configurations
+        run: |
+          docker compose config
+          docker compose -f docker-compose.yml -f docker-compose.prod.yml config
+
+      - name: Build Container Images
+        run: |
+          docker compose build
+

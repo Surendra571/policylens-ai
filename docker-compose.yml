@@ -1,0 +1,157 @@
+services:
+  # ============================================================================
+  # PostgreSQL with pgvector extension
+  # ============================================================================
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: policylens_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-policylens_db}
+      POSTGRES_USER: ${POSTGRES_USER:-policylens_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-policylens_password}
+    ports:
+      - "${POSTGRES_EXTERNAL_PORT:-5433}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-policylens_user} -d ${POSTGRES_DB:-policylens_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - policylens_net
+
+  # ============================================================================
+  # Redis - Celery Broker and Cache
+  # ============================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: policylens_redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    networks:
+      - policylens_net
+
+  # ============================================================================
+  # PolicyLens Django API Backend (Gunicorn WSGI)
+  # ============================================================================
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: policylens_backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      COLLECT_STATIC: 1
+    ports:
+      - "8000:8000"
+    volumes:
+      - document_media:/app/media
+      - static_volume:/app/staticfiles
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health/"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - policylens_net
+
+  # ============================================================================
+  # Celery Worker - OCR, Document Ingestion & AI Pipeline
+  # ============================================================================
+  celery_worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: policylens_celery_worker
+    restart: unless-stopped
+    command: ["celery", "-A", "config", "worker", "-l", "info", "--concurrency=4"]
+    env_file:
+      - .env
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+    volumes:
+      - document_media:/app/media
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python -c 'from config.celery import app; app.control.ping(timeout=3)' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 25s
+    networks:
+      - policylens_net
+
+  # ============================================================================
+  # PolicyLens Frontend - React / TypeScript / Vite via Nginx
+  # ============================================================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: policylens_frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1/healthz"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - policylens_net
+
+# ==============================================================================
+# Persistent Volumes and Isolated Networks
+# ==============================================================================
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  document_media:
+    driver: local
+  static_volume:
+    driver: local
+
+networks:
+  policylens_net:
+    driver: bridge
+
