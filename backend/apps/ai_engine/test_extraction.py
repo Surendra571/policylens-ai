@@ -1,17 +1,18 @@
 import pytest
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
-from apps.policies.models import Policy
-from apps.documents.models import Document, DocumentPage, DocumentChunk
-from apps.clauses.models import Clause
+
+from apps.ai_engine.extraction import extract_structured_policy
+from apps.ai_engine.llm_client import MockLLMClient, get_llm_client
 from apps.ai_engine.schemas import (
-    PolicyAnalysis,
     ExclusionItem,
     Limit,
+    PolicyAnalysis,
 )
-from apps.ai_engine.validators import validate_structured_output, ExtractionValidationError
-from apps.ai_engine.llm_client import MockLLMClient, get_llm_client
-from apps.ai_engine.extraction import extract_structured_policy
+from apps.ai_engine.validators import ExtractionValidationError, validate_structured_output
+from apps.clauses.models import Clause
+from apps.documents.models import Document, DocumentChunk, DocumentPage
+from apps.policies.models import Policy
 
 User = get_user_model()
 

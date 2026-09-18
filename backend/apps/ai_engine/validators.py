@@ -1,11 +1,14 @@
 import re
-from typing import List, Dict, Any
+from typing import Any
+
 from pydantic import ValidationError as PydanticValidationError
+
 from .schemas import PolicyAnalysis
 
 
 class ExtractionValidationError(Exception):
     """Raised when extracted output is malformed, missing fields, or contains unsupported claims."""
+
     pass
 
 
@@ -19,7 +22,7 @@ def normalize_for_matching(text: str) -> str:
 def verify_source_text_grounded(
     source_text: str,
     page_number: int,
-    source_chunks: List[Dict[str, Any]],
+    source_chunks: list[dict[str, Any]],
 ) -> bool:
     """
     Anti-hallucination verification:
@@ -65,7 +68,7 @@ def verify_source_text_grounded(
 
 def validate_structured_output(
     data: Any,
-    source_chunks: List[Dict[str, Any]] = None,
+    source_chunks: list[dict[str, Any]] | None = None,
     strict_grounding: bool = True,
 ) -> PolicyAnalysis:
     """

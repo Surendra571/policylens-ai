@@ -1,19 +1,21 @@
 from unittest.mock import patch
+
 import fitz
 import pytest
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
-from apps.policies.models import Policy
+
 from apps.documents.models import Document, DocumentPage
+from apps.documents.processors.chunker import chunk_page_text
 from apps.documents.processors.cleaner import clean_extracted_text
 from apps.documents.processors.ocr import is_ocr_needed
-from apps.documents.processors.chunker import chunk_page_text
 from apps.documents.tasks import (
-    process_document,
-    extract_document_pages,
     create_chunks,
+    extract_document_pages,
     generate_chunk_embeddings,
+    process_document,
 )
+from apps.policies.models import Policy
 
 User = get_user_model()
 
@@ -139,7 +141,9 @@ class TestDocumentProcessingPipeline:
 
     def test_chunk_creation_and_provenance(self):
         """Verify chunk creation guarantees that chunks strictly map to their originating page."""
-        text = "Paragraph 1: Hospitalization benefit.\n\nParagraph 2: Day care procedures.\n\nParagraph 3: AYUSH benefit."
+        text = (
+            "Paragraph 1: Hospitalization benefit.\n\nParagraph 2: Day care procedures.\n\nParagraph 3: AYUSH benefit."
+        )
         chunks = chunk_page_text(page_number=4, text=text, chunk_size=100)
 
         assert len(chunks) >= 2
@@ -150,10 +154,12 @@ class TestDocumentProcessingPipeline:
 
     def test_complete_process_document_workflow(self):
         """Test end-to-end coordinator task: UPLOADED -> EXTRACTING -> CHUNKING -> COMPLETED."""
-        pdf_bytes = generate_test_pdf([
-            "Section 1: Inpatient Care.\nRoom rent capped at 1% of sum insured.",
-            "Section 2: Pre and post hospitalization covered up to 60 and 90 days respectively.",
-        ])
+        pdf_bytes = generate_test_pdf(
+            [
+                "Section 1: Inpatient Care.\nRoom rent capped at 1% of sum insured.",
+                "Section 2: Pre and post hospitalization covered up to 60 and 90 days respectively.",
+            ]
+        )
         pdf_file = SimpleUploadedFile("complete_test.pdf", pdf_bytes, content_type="application/pdf")
         doc = Document.objects.create(
             policy=self.policy,
@@ -236,7 +242,6 @@ class TestDocumentProcessingPipeline:
         )
         extract_document_pages(str(doc.id))
         create_chunks(str(doc.id))
-
 
         # First call generates embeddings
         count1 = generate_chunk_embeddings(str(doc.id))

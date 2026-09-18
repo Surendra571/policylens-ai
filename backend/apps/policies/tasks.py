@@ -1,8 +1,10 @@
 import logging
+
 from celery import shared_task
-from apps.policies.models import Policy
+
 from apps.ai_engine.extraction import extract_structured_policy
 from apps.ai_engine.llm_client import get_llm_client
+from apps.policies.models import Policy
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +23,7 @@ TRANSIENT_TASK_EXCEPTIONS = (
     retry_backoff_max=300,
     max_retries=3,
 )
-def analyze_policy(self, policy_id: str, provider: str = None):
+def analyze_policy(self, policy_id: str, provider: str | None = None):
     """
     Asynchronous Celery task orchestrating the complete insurance policy analysis pipeline:
     1. Fetch policy and verify documents exist.
@@ -46,6 +48,7 @@ def analyze_policy(self, policy_id: str, provider: str = None):
         if doc.chunks.count() == 0:
             logger.info(f"Document {doc.id} has no chunks yet. Triggering chunking before analysis.")
             from apps.documents.tasks import process_document
+
             process_document(str(doc.id))
 
         if doc.chunks.count() == 0:
@@ -77,18 +80,20 @@ def analyze_policy(self, policy_id: str, provider: str = None):
         logger.warning(
             f"Transient failure during analysis for Policy ID {policy_id} (Attempt {self.request.retries + 1}): {exc}"
         )
-        raise self.retry(exc=exc, countdown=2 ** self.request.retries)
+        raise self.retry(exc=exc, countdown=2**self.request.retries)
 
-    except Exception as exc:
-        safe_error = f"{exc.__class__.__name__}: {str(exc)}"
-        logger.error(f"Analysis failed permanently for Policy ID {policy_id}: {safe_error}")
+    except Exception as exc:  # noqa: BLE001 - task boundary records permanent failure
+        safe_error = f"{exc.__class__.__name__}: {exc!s}"
+        logger.exception("Analysis failed permanently for Policy ID %s", policy_id)
+
         try:
             policy = Policy.objects.get(id=policy_id)
             policy.status = Policy.Status.FAILED
             policy.error_message = safe_error
             policy.save(update_fields=["status", "error_message", "updated_at"])
-        except Exception:
-            pass
+        except Exception:  # noqa: BLE001 - do not hide the original task failure
+            logger.exception("Could not persist failure state for Policy ID %s", policy_id)
+
         return {
             "status": "FAILED",
             "policy_id": str(policy_id),

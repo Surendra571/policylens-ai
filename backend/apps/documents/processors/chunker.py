@@ -1,6 +1,7 @@
-import re
 import logging
-from typing import List, Dict, Any, Optional
+import re
+from typing import Any
+
 from django.conf import settings
 
 logger = logging.getLogger(__name__)
@@ -16,7 +17,9 @@ SECTION_PATTERNS = [
     re.compile(r"^(ARTICLE\s+[0-9IVXLCDM]+[:\.\-\s]+[^\n]+)", re.IGNORECASE),
     # Coverage & Benefits (Health, Life, Motor, Travel, Property)
     re.compile(r"^(SCHEDULE\s+OF\s+BENEFITS[^\n]*)", re.IGNORECASE),
-    re.compile(r"^(COVERAGE|SCOPE\s+OF\s+COVER|BENEFITS\s+COVERED|WHAT\s+IS\s+COVERED|WHAT\s+WE\s+COVER[^\n]*)", re.IGNORECASE),
+    re.compile(
+        r"^(COVERAGE|SCOPE\s+OF\s+COVER|BENEFITS\s+COVERED|WHAT\s+IS\s+COVERED|WHAT\s+WE\s+COVER[^\n]*)", re.IGNORECASE
+    ),
     re.compile(r"^(OPERATIVE\s+CLAUSE|INSURING\s+AGREEMENT|BASE\s+COVERS?[^\n]*)", re.IGNORECASE),
     re.compile(r"^(LOSS\s+OF\s+OR\s+DAMAGE\s+TO\s+VEHICLE|OWN\s+DAMAGE\s+COVER[^\n]*)", re.IGNORECASE),
     re.compile(r"^(LIABILITY\s+TO\s+THIRD\s+PARTIES|THIRD\s+PARTY\s+LIABILITY[^\n]*)", re.IGNORECASE),
@@ -25,32 +28,41 @@ SECTION_PATTERNS = [
     re.compile(r"^(TRIP\s+CANCELLATION|EMERGENCY\s+MEDICAL|BAGGAGE\s+LOSS|TRAVEL\s+BENEFITS?[^\n]*)", re.IGNORECASE),
     # Exclusions
     re.compile(r"^(EXCLUSIONS|GENERAL\s+EXCLUSIONS|PERMANENT\s+EXCLUSIONS|SPECIFIC\s+EXCLUSIONS[^\n]*)", re.IGNORECASE),
-    re.compile(r"^(WHAT\s+IS\s+NOT\s+COVERED|WHAT\s+WE\s+DO\s+NOT\s+COVER|NON-COVERED\s+EXPENSES?[^\n]*)", re.IGNORECASE),
+    re.compile(
+        r"^(WHAT\s+IS\s+NOT\s+COVERED|WHAT\s+WE\s+DO\s+NOT\s+COVER|NON-COVERED\s+EXPENSES?[^\n]*)", re.IGNORECASE
+    ),
     re.compile(r"^(GENERAL\s+EXCEPTIONS|STANDARD\s+EXCEPTIONS|EXCLUDED\s+PERILS[^\n]*)", re.IGNORECASE),
     re.compile(r"^(SUICIDE\s+CLAUSE|WAR\s+AND\s+NUCLEAR\s+PERILS?[^\n]*)", re.IGNORECASE),
     # Waiting Periods
     re.compile(r"^(WAITING\s+PERIODS?|SPECIFIC\s+WAITING\s+PERIODS?|QUALIFYING\s+PERIODS?[^\n]*)", re.IGNORECASE),
     re.compile(r"^(INITIAL\s+WAITING\s+PERIOD|PRE-EXISTING\s+DISEASES?\s+WAITING[^\n]*)", re.IGNORECASE),
     # Limits, Deductibles & Co-pay
-    re.compile(r"^(LIMITS?|SUB-LIMITS?|CAPPING|SUM\s+INSURED|SUM\s+ASSURED|INSURED\s+DECLARED\s+VALUE|IDV[^\n]*)", re.IGNORECASE),
+    re.compile(
+        r"^(LIMITS?|SUB-LIMITS?|CAPPING|SUM\s+INSURED|SUM\s+ASSURED|INSURED\s+DECLARED\s+VALUE|IDV[^\n]*)",
+        re.IGNORECASE,
+    ),
     re.compile(r"^(DEDUCTIBLES?|CO-PAY(?:MENT)?|COMPULSORY\s+DEDUCTIBLE|VOLUNTARY\s+DEDUCTIBLE[^\n]*)", re.IGNORECASE),
     # Conditions, Duties & Disclosures
     re.compile(r"^(TERMS\s+AND\s+CONDITIONS|GENERAL\s+CONDITIONS|POLICY\s+CONDITIONS[^\n]*)", re.IGNORECASE),
     re.compile(r"^(DUTIES\s+OF\s+THE\s+INSURED|DUTY\s+OF\s+DISCLOSURE|BASIS\s+OF\s+CONTRACT[^\n]*)", re.IGNORECASE),
     re.compile(r"^(FREE\s+LOOK\s+PERIOD|GRACE\s+PERIOD|SURRENDER\s+VALUE[^\n]*)", re.IGNORECASE),
     # Claims
-    re.compile(r"^(CLAIM\s+PROCEDURE|CLAIMS?\s+SETTLEMENT|CLAIM\s+REQUIREMENTS?|NOTICE\s+OF\s+CLAIM[^\n]*)", re.IGNORECASE),
+    re.compile(
+        r"^(CLAIM\s+PROCEDURE|CLAIMS?\s+SETTLEMENT|CLAIM\s+REQUIREMENTS?|NOTICE\s+OF\s+CLAIM[^\n]*)", re.IGNORECASE
+    ),
     re.compile(r"^(DUTIES\s+IN\s+THE\s+EVENT\s+OF\s+CLAIM|DOCUMENTS\s+FOR\s+CLAIM[^\n]*)", re.IGNORECASE),
     # Renewal & Cancellation
     re.compile(r"^(RENEWAL\s+CONDITIONS?|RENEWAL\s+TERMS?|PORTABILITY|MIGRATION[^\n]*)", re.IGNORECASE),
-    re.compile(r"^(CANCELLATION\s+AND\s+REFUND|TERMINATION\s+OF\s+POLICY|LAPSE\s+AND\s+REINSTATEMENT[^\n]*)", re.IGNORECASE),
+    re.compile(
+        r"^(CANCELLATION\s+AND\s+REFUND|TERMINATION\s+OF\s+POLICY|LAPSE\s+AND\s+REINSTATEMENT[^\n]*)", re.IGNORECASE
+    ),
     # Definitions & Grievance
     re.compile(r"^(DEFINITIONS|INTERPRETATION[^\n]*)", re.IGNORECASE),
     re.compile(r"^(REDRESSAL\s+OF\s+GRIEVANCES?|OMBUDSMAN|DISPUTE\s+RESOLUTION[^\n]*)", re.IGNORECASE),
 ]
 
 
-def detect_section_heading(line: str) -> Optional[str]:
+def detect_section_heading(line: str) -> str | None:
     clean_line = line.strip()
     if not clean_line or len(clean_line) > 120:
         return None
@@ -89,7 +101,7 @@ class PolicyAwareChunker:
         text: str,
         initial_section: str = "General",
         start_chunk_index: int = 0,
-    ) -> tuple[List[Dict[str, Any]], str]:
+    ) -> tuple[list[dict[str, Any]], str]:
         if not text or not text.strip():
             return [], initial_section
 
@@ -140,11 +152,7 @@ class PolicyAwareChunker:
                 chunks.extend(emitted)
                 current_chunk_idx += len(emitted)
 
-                overlap = (
-                    current_block[-self.chunk_overlap :]
-                    if len(current_block) > self.chunk_overlap
-                    else ""
-                )
+                overlap = current_block[-self.chunk_overlap :] if len(current_block) > self.chunk_overlap else ""
                 current_block = f"{overlap}\n\n{para}" if overlap else para
                 current_block_section = active_section
 
@@ -167,7 +175,7 @@ class PolicyAwareChunker:
         section: str,
         text: str,
         start_idx: int,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         if not text:
             return []
 
@@ -217,8 +225,8 @@ class PolicyAwareChunker:
     def chunk_document(
         self,
         document_id: str,
-        pages: List[Any],
-    ) -> List[Dict[str, Any]]:
+        pages: list[Any],
+    ) -> list[dict[str, Any]]:
         all_chunks = []
         active_section = "General"
         global_chunk_idx = 0
@@ -247,7 +255,7 @@ def chunk_page_text(
     chunk_overlap: int = DEFAULT_CHUNK_OVERLAP,
     document_id: str = "",
     section: str = "General",
-) -> List[Dict[str, Any]]:
+) -> list[dict[str, Any]]:
     chunker = PolicyAwareChunker(max_chunk_size=chunk_size, chunk_overlap=chunk_overlap)
     chunks, _ = chunker.chunk_single_page(
         document_id=document_id or "temp-doc",

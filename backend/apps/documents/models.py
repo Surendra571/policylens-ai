@@ -1,6 +1,8 @@
 import uuid
+
 from django.db import models
 from pgvector.django import VectorField
+
 from apps.policies.models import Policy
 
 

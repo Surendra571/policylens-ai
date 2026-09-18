@@ -1,4 +1,5 @@
 from django.contrib import admin
+
 from .models import Clause
 
 
@@ -8,4 +9,3 @@ class ClauseAdmin(admin.ModelAdmin):
     list_filter = ("category", "confidence", "policy")
     search_fields = ("title", "explanation", "source_text", "section", "policy__name")
     date_hierarchy = "created_at"
-

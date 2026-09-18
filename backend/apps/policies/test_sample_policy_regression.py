@@ -1,12 +1,14 @@
 import datetime
+
 import pytest
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework.test import APIClient
-from apps.policies.models import Policy
-from apps.documents.models import Document, DocumentPage, DocumentChunk
-from apps.clauses.models import Clause
+
 from apps.ai_engine.extraction import extract_structured_policy
+from apps.clauses.models import Clause
+from apps.documents.models import Document, DocumentChunk, DocumentPage
+from apps.policies.models import Policy
 from apps.policies.tasks import analyze_policy
 
 User = get_user_model()
@@ -209,4 +211,3 @@ class TestSampleHealthInsuranceRegression:
         empty_policy.refresh_from_db()
         assert empty_policy.status == Policy.Status.FAILED
         assert len(empty_policy.error_message) > 0
-

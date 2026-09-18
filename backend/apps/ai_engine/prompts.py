@@ -36,7 +36,7 @@ CRITICAL EXTRACTION RULES:
 """
 
 
-def build_extraction_prompt(chunks: list[dict], metadata: dict = None) -> str:
+def build_extraction_prompt(chunks: list[dict], metadata: dict | None = None) -> str:
     """Construct prompt containing chunks tagged with their source page numbers."""
     policy_info = ""
     if metadata:

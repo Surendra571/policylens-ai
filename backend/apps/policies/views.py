@@ -1,13 +1,16 @@
 import logging
-from rest_framework import viewsets, status
+
+from rest_framework import status, viewsets
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+
 from apps.core.permissions import IsOwner
 from apps.documents.models import Document
 from apps.documents.serializers import DocumentSerializer, DocumentUploadSerializer
-from apps.documents.validators import sanitize_filename, calculate_sha256
 from apps.documents.tasks import process_document_task
+from apps.documents.validators import calculate_sha256, sanitize_filename
+
 from .models import Policy
 from .serializers import PolicySerializer
 
@@ -69,9 +72,7 @@ class PolicyViewSet(viewsets.ModelViewSet):
             return Response(
                 {
                     "success": False,
-                    "errors": {
-                        "file": ["This exact PDF document has already been uploaded for this policy."]
-                    },
+                    "errors": {"file": ["This exact PDF document has already been uploaded for this policy."]},
                     "document": DocumentSerializer(existing_doc).data,
                 },
                 status=status.HTTP_400_BAD_REQUEST,
@@ -89,8 +90,8 @@ class PolicyViewSet(viewsets.ModelViewSet):
         # Trigger async Celery processing pipeline placeholder
         try:
             process_document_task.delay(str(doc.id))
-        except Exception as exc:
-            logger.warning(f"Asynchronous task dispatch deferred: {exc}")
+        except Exception as exc:  # noqa: BLE001 - asynchronous dispatch is best effort
+            logger.warning("Asynchronous task dispatch deferred: %s", exc)
 
         return Response(
             {
@@ -126,10 +127,14 @@ class PolicyViewSet(viewsets.ModelViewSet):
 
         # Dispatch Celery task asynchronously
         from .tasks import analyze_policy_task
+
         try:
             analyze_policy_task.delay(str(policy.id))
-        except Exception as exc:
-            logger.warning(f"Celery dispatch deferred or running synchronously in testing: {exc}")
+        except Exception as exc:  # noqa: BLE001 - asynchronous dispatch is best effort
+            logger.warning(
+                "Celery dispatch deferred or running synchronously in testing: %s",
+                exc,
+            )
 
         return Response(
             {
@@ -302,6 +307,7 @@ class PolicyViewSet(viewsets.ModelViewSet):
             clauses_qs = clauses_qs.filter(category=category_param.upper())
 
         from apps.clauses.serializers import ClauseSerializer
+
         serializer = ClauseSerializer(clauses_qs, many=True)
         return Response(
             {
@@ -327,8 +333,8 @@ class PolicyViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        from apps.chat.models import Conversation, Message
         from apps.ai_engine.rag import PolicyRAGPipeline
+        from apps.chat.models import Conversation, Message
 
         conversation_id = request.data.get("conversation_id")
         conversation = None

@@ -1,5 +1,6 @@
 import logging
-from typing import List, Dict, Any, Optional
+from typing import Any
+
 from apps.documents.models import DocumentChunk, DocumentPage
 from apps.policies.models import Policy
 
@@ -8,6 +9,7 @@ logger = logging.getLogger(__name__)
 
 class CitationIntegrityError(Exception):
     """Raised when a citation fails integrity or verification checks."""
+
     pass
 
 
@@ -24,8 +26,8 @@ class CitationVerifier:
     @staticmethod
     def verify_and_enrich_citation(
         policy: Policy,
-        raw_citation: Dict[str, Any],
-    ) -> Optional[Dict[str, Any]]:
+        raw_citation: dict[str, Any],
+    ) -> dict[str, Any] | None:
         """
         Verifies a single citation against database records.
         Returns the enriched, verified citation dict or None if invalid.
@@ -50,10 +52,14 @@ class CitationVerifier:
 
         # If chunk not found by ID, attempt lookup by document page and exact text containment
         if not chunk and page_number:
-            doc_page = DocumentPage.objects.filter(
-                document__policy=policy,
-                page_number=page_number,
-            ).select_related("document").first()
+            doc_page = (
+                DocumentPage.objects.filter(
+                    document__policy=policy,
+                    page_number=page_number,
+                )
+                .select_related("document")
+                .first()
+            )
 
             if doc_page:
                 chunk = (
@@ -66,17 +72,11 @@ class CitationVerifier:
                 )
 
         if not chunk:
-            logger.warning(
-                f"Citation cannot be resolved to any DocumentChunk for policy {policy.id}. Discarding."
-            )
+            logger.warning(f"Citation cannot be resolved to any DocumentChunk for policy {policy.id}. Discarding.")
             return None
 
         # Verify page number against database record
-        real_page_number = (
-            chunk.page.page_number
-            if chunk.page
-            else chunk.metadata.get("page_number")
-        )
+        real_page_number = chunk.page.page_number if chunk.page else chunk.metadata.get("page_number")
 
         if page_number and real_page_number and int(page_number) != int(real_page_number):
             logger.warning(
@@ -107,8 +107,8 @@ class CitationVerifier:
     def filter_and_verify_citations(
         cls,
         policy: Policy,
-        citations: List[Dict[str, Any]],
-    ) -> List[Dict[str, Any]]:
+        citations: list[dict[str, Any]],
+    ) -> list[dict[str, Any]]:
         """
         Filters a list of citations, verifying each one.
         Unresolved or fabricated citations are discarded.
@@ -120,4 +120,3 @@ class CitationVerifier:
                 verified.append(enriched)
 
         return verified
-

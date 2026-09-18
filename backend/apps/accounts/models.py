@@ -1,10 +1,12 @@
 import uuid
+
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
 
 class User(AbstractUser):
     """Custom User model for PolicyLens AI with UUID primary key."""
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     email = models.EmailField(unique=True, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -20,4 +22,3 @@ class User(AbstractUser):
 
     def __str__(self):
         return self.email
-

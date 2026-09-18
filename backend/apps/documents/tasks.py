@@ -1,10 +1,12 @@
 import logging
+
 from celery import shared_task
 from django.conf import settings
 from django.db import transaction
-from .models import Document, DocumentPage, DocumentChunk
-from .processors.pdf_extractor import extract_pages_from_pdf
+
+from .models import Document, DocumentChunk, DocumentPage
 from .processors.chunker import PolicyAwareChunker
+from .processors.pdf_extractor import extract_pages_from_pdf
 
 logger = logging.getLogger(__name__)
 
@@ -101,8 +103,8 @@ def process_ocr(self, document_id: str):
 def create_chunks(
     self,
     document_id: str,
-    max_chunk_size: int = None,
-    chunk_overlap: int = None,
+    max_chunk_size: int | None = None,
+    chunk_overlap: int | None = None,
 ):
     """
     Create DocumentChunk records using PolicyAwareChunker.
@@ -196,19 +198,19 @@ def generate_chunk_embeddings(self, document_id: str, force: bool = False):
         try:
             vectors = embedding_service.get_embeddings(texts)
             with transaction.atomic():
-                for chunk_obj, vec in zip(batch, vectors):
+                for chunk_obj, vec in zip(batch, vectors, strict=False):
                     chunk_obj.embedding = vec
                     chunk_obj.save(update_fields=["embedding", "updated_at"])
                 embedded_count += len(batch)
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001 - retry the embedding task on provider failures
             logger.error(
-                f"Embedding generation failed for batch of document {document_id}: {exc.__class__.__name__}"
+                "Embedding generation failed for batch of document %s: %s",
+                document_id,
+                exc.__class__.__name__,
             )
-            raise self.retry(exc=exc, countdown=2 ** self.request.retries)
+            raise self.retry(exc=exc, countdown=2**self.request.retries)
 
-    logger.info(
-        f"Document ID {document_id}: Successfully generated embeddings for {embedded_count} chunks."
-    )
+    logger.info(f"Document ID {document_id}: Successfully generated embeddings for {embedded_count} chunks.")
     return embedded_count
 
 
@@ -242,16 +244,18 @@ def process_document(self, document_id: str):
 
         return {"status": "success", "document_id": document_id}
 
-    except Exception as exc:
-        safe_error = f"{exc.__class__.__name__}: {str(exc)}"
-        logger.error(f"Processing failed for Document ID {document_id}: {safe_error}")
+    except Exception as exc:  # noqa: BLE001 - task boundary records failure state
+        safe_error = f"{exc.__class__.__name__}: {exc!s}"
+        logger.exception("Processing failed for Document ID %s", document_id)
+
         try:
             doc = Document.objects.get(id=document_id)
             doc.processing_status = Document.ProcessingStatus.FAILED
             doc.error_message = safe_error[:500]
             doc.save(update_fields=["processing_status", "error_message", "updated_at"])
-        except Exception:
-            pass
+        except Exception:  # noqa: BLE001 - do not hide the original task failure
+            logger.exception("Could not persist failure state for Document ID %s", document_id)
+
         return {"status": "failed", "document_id": document_id, "error": safe_error}
 
 

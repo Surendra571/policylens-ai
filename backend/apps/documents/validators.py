@@ -1,6 +1,7 @@
 import hashlib
 import os
 import re
+
 from django.conf import settings
 from rest_framework.exceptions import ValidationError
 
@@ -48,9 +49,7 @@ def validate_pdf_file(file_obj):
     5. Security inspection: rejects dangerous PDF launch/executable actions
     """
     if file_obj.size > MAX_UPLOAD_SIZE_BYTES:
-        raise ValidationError(
-            f"File size exceeds maximum allowed size of {MAX_UPLOAD_SIZE_MB} MB."
-        )
+        raise ValidationError(f"File size exceeds maximum allowed size of {MAX_UPLOAD_SIZE_MB} MB.")
 
     if file_obj.size == 0:
         raise ValidationError("Uploaded file is empty.")

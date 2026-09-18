@@ -1,11 +1,12 @@
 import pytest
 from django.contrib.auth import get_user_model
-from django.db import IntegrityError, transaction
 from django.core.files.uploadedfile import SimpleUploadedFile
-from apps.policies.models import Policy
-from apps.documents.models import Document, DocumentPage, DocumentChunk
-from apps.clauses.models import Clause
+from django.db import IntegrityError, transaction
+
 from apps.chat.models import Conversation, Message
+from apps.clauses.models import Clause
+from apps.documents.models import Document, DocumentChunk, DocumentPage
+from apps.policies.models import Policy
 
 User = get_user_model()
 

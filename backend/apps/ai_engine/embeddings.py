@@ -1,9 +1,9 @@
-import os
-import math
 import logging
-import requests
+import math
+import os
 from abc import ABC, abstractmethod
-from typing import List, Optional
+
+import requests
 
 logger = logging.getLogger(__name__)
 
@@ -12,12 +12,12 @@ class BaseEmbeddingClient(ABC):
     """Abstract interface for embedding generation providers."""
 
     @abstractmethod
-    def embed_text(self, text: str) -> List[float]:
+    def embed_text(self, text: str) -> list[float]:
         """Generate an embedding vector for a single string."""
         pass
 
     @abstractmethod
-    def embed_batch(self, texts: List[str]) -> List[List[float]]:
+    def embed_batch(self, texts: list[str]) -> list[list[float]]:
         """Generate embedding vectors for a batch of strings."""
         pass
 
@@ -31,7 +31,7 @@ class MockEmbeddingClient(BaseEmbeddingClient):
     def __init__(self, dimension: int = 768):
         self.dimension = dimension
 
-    def embed_text(self, text: str) -> List[float]:
+    def embed_text(self, text: str) -> list[float]:
         if not text:
             return [0.0] * self.dimension
 
@@ -39,7 +39,7 @@ class MockEmbeddingClient(BaseEmbeddingClient):
         vector = [0.0] * self.dimension
 
         for i, token in enumerate(tokens):
-            for j, char in enumerate(token):
+            for j, _char in enumerate(token):
                 idx = (hash(token) + (j * 31) + (i * 17)) % self.dimension
                 vector[idx] += 1.0
 
@@ -50,7 +50,7 @@ class MockEmbeddingClient(BaseEmbeddingClient):
 
         return vector
 
-    def embed_batch(self, texts: List[str]) -> List[List[float]]:
+    def embed_batch(self, texts: list[str]) -> list[list[float]]:
         return [self.embed_text(t) for t in texts]
 
 
@@ -59,19 +59,19 @@ class OpenAIEmbeddingClient(BaseEmbeddingClient):
 
     def __init__(
         self,
-        api_key: Optional[str] = None,
-        model: Optional[str] = None,
+        api_key: str | None = None,
+        model: str | None = None,
         dimension: int = 768,
     ):
         self.api_key = api_key or os.getenv("OPENAI_API_KEY")
         self.model = model or os.getenv("OPENAI_EMBEDDING_MODEL", "text-embedding-3-small")
         self.dimension = dimension
 
-    def embed_text(self, text: str) -> List[float]:
+    def embed_text(self, text: str) -> list[float]:
         batch = self.embed_batch([text])
         return batch[0] if batch else [0.0] * self.dimension
 
-    def embed_batch(self, texts: List[str]) -> List[List[float]]:
+    def embed_batch(self, texts: list[str]) -> list[list[float]]:
         if not self.api_key:
             raise ValueError("OPENAI_API_KEY is not set.")
         if not texts:
@@ -95,9 +95,7 @@ class OpenAIEmbeddingClient(BaseEmbeddingClient):
 
         for emb in embeddings:
             if len(emb) != self.dimension:
-                raise ValueError(
-                    f"OpenAI returned vector of dimension {len(emb)}, expected {self.dimension}"
-                )
+                raise ValueError(f"OpenAI returned vector of dimension {len(emb)}, expected {self.dimension}")
         return embeddings
 
 
@@ -106,15 +104,15 @@ class GeminiEmbeddingClient(BaseEmbeddingClient):
 
     def __init__(
         self,
-        api_key: Optional[str] = None,
-        model: Optional[str] = None,
+        api_key: str | None = None,
+        model: str | None = None,
         dimension: int = 768,
     ):
         self.api_key = api_key or os.getenv("GEMINI_API_KEY")
         self.model = model or os.getenv("GEMINI_EMBEDDING_MODEL", "text-embedding-004")
         self.dimension = dimension
 
-    def embed_text(self, text: str) -> List[float]:
+    def embed_text(self, text: str) -> list[float]:
         if not self.api_key:
             raise ValueError("GEMINI_API_KEY is not set.")
         if not text:
@@ -129,12 +127,10 @@ class GeminiEmbeddingClient(BaseEmbeddingClient):
         res.raise_for_status()
         values = res.json().get("embedding", {}).get("values", [])
         if len(values) != self.dimension:
-            raise ValueError(
-                f"Gemini returned vector of dimension {len(values)}, expected {self.dimension}"
-            )
+            raise ValueError(f"Gemini returned vector of dimension {len(values)}, expected {self.dimension}")
         return values
 
-    def embed_batch(self, texts: List[str]) -> List[List[float]]:
+    def embed_batch(self, texts: list[str]) -> list[list[float]]:
         if not self.api_key:
             raise ValueError("GEMINI_API_KEY is not set.")
         if not texts:
@@ -156,9 +152,7 @@ class GeminiEmbeddingClient(BaseEmbeddingClient):
 
         for emb in results:
             if len(emb) != self.dimension:
-                raise ValueError(
-                    f"Gemini returned vector of dimension {len(emb)}, expected {self.dimension}"
-                )
+                raise ValueError(f"Gemini returned vector of dimension {len(emb)}, expected {self.dimension}")
         return results
 
 
@@ -172,8 +166,8 @@ class EmbeddingService:
     def __init__(
         self,
         dimension: int = 768,
-        provider: Optional[str] = None,
-        client: Optional[BaseEmbeddingClient] = None,
+        provider: str | None = None,
+        client: BaseEmbeddingClient | None = None,
     ):
         self.dimension = dimension
         if client:
@@ -190,13 +184,13 @@ class EmbeddingService:
             else:
                 self.client = MockEmbeddingClient(dimension=dimension)
 
-    def get_embedding(self, text: str) -> List[float]:
+    def get_embedding(self, text: str) -> list[float]:
         """Generate normalized vector for a single text."""
         vec = self.client.embed_text(text)
         self._validate_vector(vec)
         return vec
 
-    def get_embeddings(self, texts: List[str]) -> List[List[float]]:
+    def get_embeddings(self, texts: list[str]) -> list[list[float]]:
         """Generate normalized vectors for a batch of texts."""
         if not texts:
             return []
@@ -205,9 +199,7 @@ class EmbeddingService:
             self._validate_vector(vec)
         return vectors
 
-    def _validate_vector(self, vector: List[float]):
+    def _validate_vector(self, vector: list[float]):
         """Ensure vector matches configured dimension without truncation or padding."""
         if len(vector) != self.dimension:
-            raise ValueError(
-                f"Invalid embedding dimension: got {len(vector)}, expected {self.dimension}."
-            )
+            raise ValueError(f"Invalid embedding dimension: got {len(vector)}, expected {self.dimension}.")

@@ -1,9 +1,10 @@
 import pytest
 from django.contrib.auth import get_user_model
-from apps.policies.models import Policy
-from apps.documents.models import Document, DocumentPage, DocumentChunk
+
 from apps.ai_engine.citation_verifier import CitationVerifier
 from apps.ai_engine.rag import PolicyRAGPipeline
+from apps.documents.models import Document, DocumentChunk, DocumentPage
+from apps.policies.models import Policy
 
 User = get_user_model()
 
@@ -159,4 +160,3 @@ class TestCitationIntegrity:
             assert cite["policy"] == policy.name
             assert cite["document"] == doc.original_filename
             assert cite["verified"] is True
-

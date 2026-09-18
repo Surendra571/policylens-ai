@@ -1,10 +1,11 @@
 import pytest
 from django.contrib.auth import get_user_model
-from rest_framework.test import APIClient
 from rest_framework import status
-from apps.policies.models import Policy
-from apps.documents.models import Document, DocumentPage, DocumentChunk
+from rest_framework.test import APIClient
+
 from apps.chat.models import Conversation, Message
+from apps.documents.models import Document, DocumentChunk, DocumentPage
+from apps.policies.models import Policy
 
 User = get_user_model()
 
@@ -151,6 +152,7 @@ class TestPolicySpecificAIChat:
 
     def test_policy_retriever_scoping_and_cross_policy_isolation(self, user_a, user_b, policy_a):
         from apps.ai_engine.retrieval import PolicyRetriever
+
         retriever = PolicyRetriever(top_k=3, min_score=0.1)
 
         # Retrieval for owner succeeds

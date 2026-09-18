@@ -1,5 +1,7 @@
 import uuid
+
 from django.db import models
+
 from apps.policies.models import Policy
 
 
@@ -68,4 +70,3 @@ class Clause(models.Model):
 
     def __str__(self):
         return f"[{self.get_category_display()}] {self.title} (p. {self.page_number or 'N/A'})"
-

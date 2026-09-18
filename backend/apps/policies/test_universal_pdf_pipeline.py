@@ -1,12 +1,14 @@
 import datetime
+
 import pytest
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework.test import APIClient
-from apps.policies.models import Policy
-from apps.documents.models import Document, DocumentPage, DocumentChunk
-from apps.clauses.models import Clause
+
 from apps.ai_engine.extraction import extract_structured_policy
+from apps.clauses.models import Clause
+from apps.documents.models import Document, DocumentChunk, DocumentPage
+from apps.policies.models import Policy
 
 User = get_user_model()
 
@@ -197,7 +199,10 @@ class TestUniversalInsurancePipeline:
 
         exclusions = clauses.filter(category=Clause.Category.EXCLUSION)
         assert exclusions.count() >= 2
-        assert any("liquor" in c.title.lower() or "consequential" in c.title.lower() or "wear" in c.title.lower() for c in exclusions)
+        assert any(
+            "liquor" in c.title.lower() or "consequential" in c.title.lower() or "wear" in c.title.lower()
+            for c in exclusions
+        )
 
         deductibles = clauses.filter(category=Clause.Category.DEDUCTIBLE)
         assert deductibles.count() >= 1
@@ -339,4 +344,3 @@ class TestUniversalInsurancePipeline:
         assert "evidence" in point
         assert point["evidence"]["page_number"] == 1
         assert point["evidence"]["source_text"] != ""
-

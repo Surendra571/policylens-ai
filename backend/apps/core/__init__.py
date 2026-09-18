@@ -1,1 +1,1 @@
-﻿"""Core app."""
+"""Core app."""

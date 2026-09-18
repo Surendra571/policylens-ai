@@ -1,7 +1,8 @@
 import pytest
 from django.contrib.auth import get_user_model
-from rest_framework.test import APIClient
 from rest_framework import status
+from rest_framework.test import APIClient
+
 from apps.policies.models import Policy
 
 User = get_user_model()
@@ -71,6 +72,7 @@ class TestAPIResponseFormatsAndErrors:
 
     def test_server_error_handler_fallback(self):
         from apps.core.exceptions import custom_exception_handler
+
         # Test custom exception handler handles unhandled internal exceptions cleanly
         unhandled_exc = Exception("Critical unexpected failure")
         res = custom_exception_handler(unhandled_exc, {})
@@ -79,4 +81,3 @@ class TestAPIResponseFormatsAndErrors:
         assert res.data["success"] is False
         assert res.data["error"]["status_code"] == 500
         assert "internal server error" in res.data["error"]["message"].lower()
-

@@ -1,7 +1,9 @@
 from rest_framework import serializers
-from .models import Policy
-from apps.documents.serializers import DocumentSerializer
+
 from apps.clauses.serializers import ClauseSerializer
+from apps.documents.serializers import DocumentSerializer
+
+from .models import Policy
 
 
 class PolicySerializer(serializers.ModelSerializer):
@@ -34,6 +36,7 @@ class PolicySerializer(serializers.ModelSerializer):
 
 class PolicyMetadataSerializer(serializers.Serializer):
     """Metadata summary representation for policy."""
+
     policy_id = serializers.UUIDField(source="id")
     name = serializers.CharField()
     provider = serializers.CharField()
@@ -48,6 +51,7 @@ class PolicyMetadataSerializer(serializers.Serializer):
 
 class ImportantPointSerializer(serializers.Serializer):
     """Important highlight with grounded document evidence."""
+
     category = serializers.CharField()
     title = serializers.CharField()
     explanation = serializers.CharField()
@@ -56,6 +60,7 @@ class ImportantPointSerializer(serializers.Serializer):
 
 class PolicyAnalysisSummaryResponseSerializer(serializers.Serializer):
     """Full structured policy analysis payload returned to frontend."""
+
     status = serializers.CharField()
     analyzed = serializers.BooleanField()
     analyzed_at = serializers.DateTimeField(allow_null=True)

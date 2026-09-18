@@ -1,5 +1,6 @@
 from rest_framework import serializers
-from .models import Document, DocumentPage, DocumentChunk
+
+from .models import Document, DocumentChunk, DocumentPage
 from .validators import validate_pdf_file
 
 

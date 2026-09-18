@@ -9,22 +9,23 @@ Used as an intelligent offline extractor, benchmark validator, and robust fallba
 """
 
 import re
-from typing import List, Dict, Any, Optional, Tuple
 from datetime import datetime
+from typing import Any
+
 from .schemas import (
+    CancellationItem,
+    ClaimRequirement,
+    Condition,
+    CoverageItem,
+    Deductible,
+    EligibilityItem,
+    ExclusionItem,
+    Limit,
+    OtherClauseItem,
     PolicyAnalysis,
     PolicyMetadata,
-    CoverageItem,
-    ExclusionItem,
-    WaitingPeriod,
-    Limit,
-    Deductible,
-    Condition,
-    ClaimRequirement,
-    EligibilityItem,
     RenewalItem,
-    CancellationItem,
-    OtherClauseItem,
+    WaitingPeriod,
 )
 
 
@@ -37,7 +38,7 @@ def _clean_currency_text(text: str) -> str:
     return res
 
 
-def _parse_date_to_iso(date_str: str) -> Optional[str]:
+def _parse_date_to_iso(date_str: str) -> str | None:
     """Parse dates like '01-Apr-2026' or '2026-04-01' into ISO 'YYYY-MM-DD'."""
     if not date_str:
         return None
@@ -65,11 +66,16 @@ def _detect_policy_type_from_text(text: str) -> str:
         return "BIKE"
     if any(k in low for k in ["private car", "car insurance", "passenger vehicle"]):
         return "CAR"
-    if any(k in low for k in ["motor insurance", "own damage", "third party liability", "insured's declared value", "idv"]):
+    if any(
+        k in low for k in ["motor insurance", "own damage", "third party liability", "insured's declared value", "idv"]
+    ):
         return "MOTOR"
     if any(k in low for k in ["term life", "term plan", "term insurance"]):
         return "TERM_LIFE"
-    if any(k in low for k in ["life assured", "death benefit", "maturity benefit", "survival benefit", "nominee", "life insurance"]):
+    if any(
+        k in low
+        for k in ["life assured", "death benefit", "maturity benefit", "survival benefit", "nominee", "life insurance"]
+    ):
         return "LIFE"
     if any(k in low for k in ["overseas travel", "travel insurance", "trip delay", "baggage loss", "schengen"]):
         return "TRAVEL"
@@ -77,7 +83,9 @@ def _detect_policy_type_from_text(text: str) -> str:
         return "HOME"
     if any(k in low for k in ["property insurance", "commercial package", "business interruption"]):
         return "PROPERTY"
-    if any(k in low for k in ["personal accident", "accidental death and dismemberment", "permanent total disablement"]):
+    if any(
+        k in low for k in ["personal accident", "accidental death and dismemberment", "permanent total disablement"]
+    ):
         return "PERSONAL_ACCIDENT"
     if any(k in low for k in ["critical illness", "major medical illness"]):
         return "CRITICAL_ILLNESS"
@@ -89,7 +97,9 @@ def _detect_policy_type_from_text(text: str) -> str:
         return "TOP_UP"
     if any(k in low for k in ["group health", "group mediclaim", "corporate policy"]):
         return "GROUP"
-    if any(k in low for k in ["health insurance", "hospitalization", "inpatient", "in-patient", "mediclaim", "day care"]):
+    if any(
+        k in low for k in ["health insurance", "hospitalization", "inpatient", "in-patient", "mediclaim", "day care"]
+    ):
         return "HEALTH"
     return "OTHER"
 
@@ -179,7 +189,7 @@ SECTION_ROUTING = [
 def parse_insurance_document_text(
     text: str = "",
     default_page: int = 1,
-    chunks: Optional[List[Dict[str, Any]]] = None,
+    chunks: list[dict[str, Any]] | None = None,
 ) -> PolicyAnalysis:
     """
     Universally and dynamically parses any valid insurance document into a structured PolicyAnalysis.
@@ -215,7 +225,9 @@ def parse_insurance_document_text(
         )
         if header_name:
             cand = header_name.group(1).strip()
-            if not any(k in cand.lower() for k in ["provider:", "page", "policy period", "period of", "table", "section"]):
+            if not any(
+                k in cand.lower() for k in ["provider:", "page", "policy period", "period of", "table", "section"]
+            ):
                 meta.policy_name = cand
         if not meta.policy_name:
             before_provider = re.search(r"([A-Z0-9][A-Za-z0-9\s\-_]{3,50})\s*\n+\s*Provider:", doc_text, re.IGNORECASE)
@@ -302,17 +314,17 @@ def parse_insurance_document_text(
         meta.policy_number = meta.uin
 
     # 2. Section and Clause Segmentation
-    coverages: List[CoverageItem] = []
-    exclusions: List[ExclusionItem] = []
-    waiting_periods: List[WaitingPeriod] = []
-    deductibles: List[Deductible] = []
-    limits: List[Limit] = []
-    conditions: List[Condition] = []
-    claim_requirements: List[ClaimRequirement] = []
-    eligibility: List[EligibilityItem] = []
-    renewal: List[RenewalItem] = []
-    cancellation: List[CancellationItem] = []
-    other_clauses: List[OtherClauseItem] = []
+    coverages: list[CoverageItem] = []
+    exclusions: list[ExclusionItem] = []
+    waiting_periods: list[WaitingPeriod] = []
+    deductibles: list[Deductible] = []
+    limits: list[Limit] = []
+    conditions: list[Condition] = []
+    claim_requirements: list[ClaimRequirement] = []
+    eligibility: list[EligibilityItem] = []
+    renewal: list[RenewalItem] = []
+    cancellation: list[CancellationItem] = []
+    other_clauses: list[OtherClauseItem] = []
 
     def find_page_for_text(target_str: str) -> int:
         if not chunks:
@@ -340,7 +352,7 @@ def parse_insurance_document_text(
                 return True
         return False
 
-    def build_title_and_explanation(raw_clause: str) -> Tuple[str, str]:
+    def build_title_and_explanation(raw_clause: str) -> tuple[str, str]:
         colon_split = raw_clause.split(":", 1)
         if len(colon_split) > 1 and len(colon_split[0].strip()) < 50:
             title = colon_split[0].strip()
@@ -500,7 +512,9 @@ def parse_insurance_document_text(
                 conditions.append(item)
 
             # Check if condition specifies a sub-limit, capping, or financial ceiling
-            if any(k in verbatim_source.lower() for k in ["limited to", "capped at", "sub-limit", "sub limit", "room rent"]):
+            if any(
+                k in verbatim_source.lower() for k in ["limited to", "capped at", "sub-limit", "sub limit", "room rent"]
+            ):
                 limit_item = Limit(
                     title=title,
                     explanation=explanation,

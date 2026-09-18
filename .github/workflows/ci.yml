@@ -28,7 +28,7 @@ jobs:
         ports:
           - 5432:5432
         options: >-
-          --health-cmd pg_isready
+          --health-cmd "pg_isready -U policylens_user -d policylens_db"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -86,7 +86,7 @@ jobs:
       - name: Run Backend Linting (Ruff)
         working-directory: backend
         run: |
-          ruff check apps/
+          ruff check apps/ --exclude '*/migrations/*.py'
 
       - name: Run Django System Checks
         working-directory: backend

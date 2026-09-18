@@ -1,8 +1,10 @@
 import logging
-from typing import Dict, Any, List, Optional
+from typing import Any
+
 from apps.policies.models import Policy
+
+from .llm_client import BaseLLMClient, get_llm_client
 from .retrieval import PolicyRetriever
-from .llm_client import get_llm_client, BaseLLMClient
 
 logger = logging.getLogger(__name__)
 
@@ -16,8 +18,8 @@ class PolicyRAGPipeline:
 
     def __init__(
         self,
-        retriever: Optional[PolicyRetriever] = None,
-        llm_client: Optional[BaseLLMClient] = None,
+        retriever: PolicyRetriever | None = None,
+        llm_client: BaseLLMClient | None = None,
     ):
         self.retriever = retriever or PolicyRetriever(top_k=4, min_score=0.1)
         self.llm_client = llm_client or get_llm_client()
@@ -27,8 +29,8 @@ class PolicyRAGPipeline:
         policy: Policy,
         question: str,
         user=None,
-        conversation_history: Optional[List[Dict[str, str]]] = None,
-    ) -> Dict[str, Any]:
+        conversation_history: list[dict[str, str]] | None = None,
+    ) -> dict[str, Any]:
         """
         Execute full RAG pipeline:
         1. Tenant & policy validation
@@ -62,15 +64,18 @@ class PolicyRAGPipeline:
             context_blocks.append(
                 f"[Source {i+1} | Page {chunk['page_number']} | Section: {chunk['section']}]\n{chunk['source_text']}"
             )
-            raw_citations.append({
-                "chunk_id": chunk.get("chunk_id"),
-                "page": chunk["page_number"],
-                "section": chunk["section"],
-                "source_text": chunk["source_text"],
-            })
+            raw_citations.append(
+                {
+                    "chunk_id": chunk.get("chunk_id"),
+                    "page": chunk["page_number"],
+                    "section": chunk["section"],
+                    "source_text": chunk["source_text"],
+                }
+            )
 
         # Strict citation verification against database records
         from .citation_verifier import CitationVerifier
+
         verified_citations = CitationVerifier.filter_and_verify_citations(policy, raw_citations)
 
         if not verified_citations:
@@ -108,7 +113,7 @@ class PolicyRAGPipeline:
                     f"Section '{first_cite['section']}'):\n\n"
                     f"{first_cite['source_text']}"
                 )
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001 - robust answer fallback if LLM generation errors
             logger.error(f"Error during LLM generation: {exc}")
             raw_answer = f"According to page {verified_citations[0]['page']} of your policy, the relevant clause states: {verified_citations[0]['source_text'][:200]}..."
 
@@ -125,4 +130,3 @@ class PolicyRAGPipeline:
             "confidence": confidence,
             "citations": verified_citations,
         }
-

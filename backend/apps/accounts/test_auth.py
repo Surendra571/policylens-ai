@@ -1,7 +1,7 @@
 import pytest
 from django.contrib.auth import get_user_model
-from rest_framework.test import APIClient
 from rest_framework import status
+from rest_framework.test import APIClient
 
 User = get_user_model()
 
@@ -121,6 +121,7 @@ class TestAuthenticationEndpoints:
             password="Password123!",
         )
         from rest_framework_simplejwt.tokens import RefreshToken
+
         refresh = str(RefreshToken.for_user(user))
 
         response = self.client.post("/api/v1/auth/refresh/", {"refresh": refresh}, format="json")

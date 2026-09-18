@@ -1,7 +1,8 @@
 import pytest
 from django.urls import reverse
-from rest_framework.test import APIClient
 from rest_framework import status
+from rest_framework.test import APIClient
+
 from apps.ai_engine.embeddings import (
     EmbeddingService,
     MockEmbeddingClient,
@@ -22,6 +23,7 @@ def test_health_check_endpoint():
 
 def test_celery_configuration():
     from config.celery import app as celery_app
+
     assert celery_app.main == "policylens"
 
 
@@ -68,6 +70,7 @@ def test_embedding_invalid_dimension_rejection():
 @pytest.mark.django_db
 def test_throttling_rates_configured():
     from apps.core.throttles import DocumentUploadThrottle, PolicyAnalysisThrottle, PolicyChatThrottle
+
     assert DocumentUploadThrottle.scope == "document_upload"
     assert PolicyAnalysisThrottle.scope == "policy_analysis"
     assert PolicyChatThrottle.scope == "policy_chat"

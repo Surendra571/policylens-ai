@@ -1,11 +1,13 @@
 import io
 import logging
+
 from PIL import Image
 
 logger = logging.getLogger(__name__)
 
 try:
     import pytesseract
+
     PYTESSERACT_AVAILABLE = True
 except ImportError:
     PYTESSERACT_AVAILABLE = False
@@ -41,6 +43,10 @@ def extract_text_via_ocr(page, lang: str = "eng") -> str:
         # Perform OCR using pytesseract
         ocr_text = pytesseract.image_to_string(image, lang=lang)
         return ocr_text or ""
-    except Exception as exc:
-        logger.warning(f"OCR processing failed for page {getattr(page, 'number', 'unknown')}: {exc}")
+    except Exception as exc:  # noqa: BLE001 - OCR failure must not abort PDF extraction
+        logger.warning(
+            "OCR processing failed for page %s: %s",
+            getattr(page, "number", "unknown"),
+            exc,
+        )
         return ""

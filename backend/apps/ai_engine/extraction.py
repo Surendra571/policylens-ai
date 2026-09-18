@@ -1,19 +1,22 @@
 import logging
-from typing import Optional, List, Dict, Any
-from django.utils import timezone
+from typing import Any
+
 from django.db import transaction
-from apps.documents.models import Document
+from django.utils import timezone
+
 from apps.clauses.models import Clause
+from apps.documents.models import Document
 from apps.policies.models import Policy
-from .schemas import PolicyAnalysis
-from .prompts import build_extraction_prompt
-from .validators import validate_structured_output, ExtractionValidationError
+
 from .llm_client import BaseLLMClient, get_llm_client
+from .prompts import build_extraction_prompt
+from .schemas import PolicyAnalysis
+from .validators import ExtractionValidationError, validate_structured_output
 
 logger = logging.getLogger(__name__)
 
 
-def _normalize_policy_type(raw_type: Optional[str]) -> str:
+def _normalize_policy_type(raw_type: str | None) -> str:
     if not raw_type:
         return Policy.PolicyType.OTHER
     t = raw_type.upper().replace("-", "_").replace(" ", "_")
@@ -98,10 +101,11 @@ def _merge_analyses(base: PolicyAnalysis, addition: PolicyAnalysis) -> PolicyAna
     return base
 
 
-def _parse_date(d_str: Optional[str]):
+def _parse_date(d_str: str | None):
     if not d_str:
         return None
     from datetime import datetime
+
     for fmt in ("%Y-%m-%d", "%d-%b-%Y", "%d-%B-%Y", "%d/%m/%Y", "%d-%m-%Y"):
         try:
             return datetime.strptime(d_str.strip(), fmt).date()
@@ -112,7 +116,7 @@ def _parse_date(d_str: Optional[str]):
 
 def extract_structured_policy(
     document_id: str,
-    llm_client: Optional[BaseLLMClient] = None,
+    llm_client: BaseLLMClient | None = None,
     strict_validation: bool = True,
 ) -> PolicyAnalysis:
     """
@@ -128,7 +132,7 @@ def extract_structured_policy(
     policy = doc.policy
 
     chunks_qs = doc.chunks.select_related("page").order_by("chunk_index")
-    chunks_data: List[Dict[str, Any]] = []
+    chunks_data: list[dict[str, Any]] = []
     for ch in chunks_qs:
         chunks_data.append(
             {
@@ -153,7 +157,7 @@ def extract_structured_policy(
         )
         try:
             raw_analysis = client.generate_structured(prompt=prompt, schema=PolicyAnalysis)
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001 - fallback to heuristic parser if client fails
             logger.warning(f"Client extraction raised: {exc}. Attempting heuristic fallback.")
     else:
         logger.info(f"Document {document_id} has {len(chunks_data)} chunks. Processing in windowed batches.")
@@ -172,7 +176,7 @@ def extract_structured_policy(
                 if batch_res:
                     accumulated = _merge_analyses(accumulated, batch_res)
                     has_any_llm_success = True
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001 - batch failure must not abort other batches
                 logger.warning(f"Batch extraction [{i}:{i+batch_size}] raised: {exc}")
         if has_any_llm_success:
             raw_analysis = accumulated
@@ -194,6 +198,7 @@ def extract_structured_policy(
     )
     if not has_items:
         from .heuristic_parser import parse_insurance_document_text
+
         raw_analysis = parse_insurance_document_text(chunks=chunks_data)
 
     # 2. Validate against schema and verify grounding / quotes against source chunks
@@ -274,7 +279,5 @@ def extract_structured_policy(
         policy.analyzed_at = timezone.now()
         policy.save(update_fields=list(set(update_fields)))
 
-    logger.info(
-        f"Structured extraction completed for Policy ID {policy.id}. Persisted {len(clause_objs)} clauses."
-    )
+    logger.info(f"Structured extraction completed for Policy ID {policy.id}. Persisted {len(clause_objs)} clauses.")
     return validated_analysis

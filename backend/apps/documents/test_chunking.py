@@ -104,8 +104,7 @@ class TestPolicyAwareChunking:
         """A lengthy section with extensive text is partitioned into manageable chunks respecting max_chunk_size."""
         chunker = PolicyAwareChunker(max_chunk_size=200, chunk_overlap=50)
         repetitive_exclusions = (
-            "WAITING PERIODS\n"
-            + "Treatment for cataract has a waiting period of 24 consecutive months. " * 8
+            "WAITING PERIODS\n" + "Treatment for cataract has a waiting period of 24 consecutive months. " * 8
         )
 
         chunks, _ = chunker.chunk_single_page(

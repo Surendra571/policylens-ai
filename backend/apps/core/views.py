@@ -1,11 +1,14 @@
 import logging
+
+from django.core.cache import cache
+from django.db import connection
+from django.db.utils import OperationalError
+from django.utils import timezone
+from redis.exceptions import RedisError
+from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
-from rest_framework import status
-from django.utils import timezone
-from django.db import connection
-from django.core.cache import cache
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +25,7 @@ def health_check(request):
         connection.ensure_connection()
         db_ok = True
         db_status = "healthy"
-    except Exception:
+    except OperationalError:
         db_status = "unavailable"
 
     redis_ok = False
@@ -33,7 +36,7 @@ def health_check(request):
             redis_status = "healthy"
         else:
             redis_status = "unresponsive"
-    except Exception:
+    except (RedisError, OSError):
         redis_status = "unavailable"
 
     # Celery infrastructure status check
@@ -43,15 +46,18 @@ def health_check(request):
     overall_status = "healthy" if is_healthy else ("degraded" if (db_ok or redis_ok) else "unhealthy")
     http_status = status.HTTP_200_OK if is_healthy else status.HTTP_503_SERVICE_UNAVAILABLE
 
-    return Response({
-        "status": overall_status,
-        "service": "policylens-ai-backend",
-        "version": "1.0.0",
-        "timestamp": timezone.now().isoformat(),
-        "services": {
-            "database": db_status,
-            "redis": redis_status,
-            "cache": redis_status,
-            "celery": celery_status,
+    return Response(
+        {
+            "status": overall_status,
+            "service": "policylens-ai-backend",
+            "version": "1.0.0",
+            "timestamp": timezone.now().isoformat(),
+            "services": {
+                "database": db_status,
+                "redis": redis_status,
+                "cache": redis_status,
+                "celery": celery_status,
+            },
         },
-    }, status=http_status)
+        status=http_status,
+    )

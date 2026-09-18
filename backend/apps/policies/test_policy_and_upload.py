@@ -1,11 +1,13 @@
 from unittest.mock import patch
+
 import pytest
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
-from rest_framework.test import APIClient
 from rest_framework import status
-from apps.policies.models import Policy
+from rest_framework.test import APIClient
+
 from apps.documents.models import Document
+from apps.policies.models import Policy
 
 User = get_user_model()
 

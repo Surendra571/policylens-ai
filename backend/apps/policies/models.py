@@ -1,4 +1,5 @@
 import uuid
+
 from django.conf import settings
 from django.db import models
 from django.utils import timezone
@@ -82,4 +83,3 @@ class Policy(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.provider}) - {self.get_status_display()}"
-

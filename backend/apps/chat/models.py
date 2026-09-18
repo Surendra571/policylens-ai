@@ -1,6 +1,8 @@
 import uuid
+
 from django.conf import settings
 from django.db import models
+
 from apps.policies.models import Policy
 
 
@@ -75,4 +77,3 @@ class Message(models.Model):
 
     def __str__(self):
         return f"[{self.role}] {self.content[:40]}..."
-

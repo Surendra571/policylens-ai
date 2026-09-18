@@ -1,5 +1,6 @@
 from django.contrib import admin
-from .models import Document, DocumentPage, DocumentChunk
+
+from .models import Document, DocumentChunk, DocumentPage
 
 
 @admin.register(Document)
@@ -21,4 +22,3 @@ class DocumentPageAdmin(admin.ModelAdmin):
 class DocumentChunkAdmin(admin.ModelAdmin):
     list_display = ("chunk_index", "document", "page", "created_at")
     search_fields = ("document__original_filename", "content")
-

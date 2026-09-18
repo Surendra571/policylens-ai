@@ -1,15 +1,18 @@
 import logging
-from typing import List, Dict, Any, Union, Tuple
 from pathlib import Path
+from typing import Any
+
 import fitz  # PyMuPDF
-from apps.documents.models import DocumentPage, Document
-from .ocr import is_ocr_needed, extract_text_via_ocr
+
+from apps.documents.models import Document, DocumentPage
+
 from .cleaner import clean_extracted_text
+from .ocr import extract_text_via_ocr, is_ocr_needed
 
 logger = logging.getLogger(__name__)
 
 
-def _extract_blocks_in_reading_order(page) -> Tuple[str, str, str]:
+def _extract_blocks_in_reading_order(page) -> tuple[str, str, str]:
     """
     Extracts text using PyMuPDF blocks with multi-column layout sorting:
     Returns (raw_full_text, header_text, footer_text).
@@ -45,7 +48,14 @@ def _extract_blocks_in_reading_order(page) -> Tuple[str, str, str]:
         right_col_sorted = sorted(right_col, key=lambda b: b[1])
         middle_or_spanning = [b for b in text_blocks if b not in left_col and b not in right_col]
         middle_sorted = sorted(middle_or_spanning, key=lambda b: b[1])
-        sorted_blocks = sorted(middle_sorted + left_col_sorted + right_col_sorted, key=lambda b: (0 if b[1] < header_threshold else (2 if b[1] > footer_threshold else 1), 0 if b in left_col else 1, b[1]))
+        sorted_blocks = sorted(
+            middle_sorted + left_col_sorted + right_col_sorted,
+            key=lambda b: (
+                0 if b[1] < header_threshold else (2 if b[1] > footer_threshold else 1),
+                0 if b in left_col else 1,
+                b[1],
+            ),
+        )
     else:
         # Standard single-column sort by vertical coordinate y0
         sorted_blocks = sorted(text_blocks, key=lambda b: (b[1], b[0]))
@@ -69,10 +79,10 @@ def _extract_blocks_in_reading_order(page) -> Tuple[str, str, str]:
 
 
 def extract_pages_from_pdf(
-    file_source: Union[str, Path, bytes],
+    file_source: str | Path | bytes,
     trigger_ocr: bool = True,
     min_ocr_chars: int = 40,
-) -> Tuple[List[Dict[str, Any]], str]:
+) -> tuple[list[dict[str, Any]], str]:
     """
     Extract text page-by-page from a PDF document using PyMuPDF with block-level layout awareness,
     running header/footer filtering, and automatic OCR fallback when scanned/low-density pages are detected.
@@ -80,7 +90,7 @@ def extract_pages_from_pdf(
     Returns:
       (extracted_pages_list, document_quality)
     """
-    if isinstance(file_source, (str, Path)):
+    if isinstance(file_source, str | Path):
         doc = fitz.open(str(file_source))
     else:
         doc = fitz.open(stream=file_source, filetype="pdf")
@@ -101,13 +111,15 @@ def extract_pages_from_pdf(
             if not raw_text.strip():
                 raw_text = page.get_text("text") or ""
 
-            raw_pages_info.append({
-                "page": page,
-                "page_number": page_number,
-                "raw_text": raw_text,
-                "header_text": header_text,
-                "footer_text": footer_text,
-            })
+            raw_pages_info.append(
+                {
+                    "page": page,
+                    "page_number": page_number,
+                    "raw_text": raw_text,
+                    "header_text": header_text,
+                    "footer_text": footer_text,
+                }
+            )
 
         # Detect repeated running headers/footers across pages (present in >= 3 pages)
         header_frequency = {}
@@ -156,9 +168,7 @@ def extract_pages_from_pdf(
             cleaned = clean_extracted_text(raw_text)
             total_text_len += len(cleaned)
 
-            logger.info(
-                f"Page {page_number}/{total_pages} processed using {method} (length: {len(cleaned)} chars)."
-            )
+            logger.info(f"Page {page_number}/{total_pages} processed using {method} (length: {len(cleaned)} chars).")
 
             extracted_pages.append(
                 {

@@ -1,12 +1,13 @@
 import pytest
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
-from rest_framework.test import APIClient
 from rest_framework import status
-from apps.policies.models import Policy
-from apps.documents.models import Document
-from apps.clauses.models import Clause
+from rest_framework.test import APIClient
+
 from apps.chat.models import Conversation, Message
+from apps.clauses.models import Clause
+from apps.documents.models import Document
+from apps.policies.models import Policy
 
 User = get_user_model()
 

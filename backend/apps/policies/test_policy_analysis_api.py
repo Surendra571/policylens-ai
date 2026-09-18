@@ -1,19 +1,21 @@
-import pytest
 from unittest.mock import patch
+
+import pytest
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.utils import timezone
-from rest_framework.test import APIClient
 from rest_framework import status
-from apps.policies.models import Policy
-from apps.documents.models import Document, DocumentPage, DocumentChunk
-from apps.clauses.models import Clause
+from rest_framework.test import APIClient
+
+from apps.ai_engine.llm_client import MockLLMClient
 from apps.ai_engine.schemas import (
-    PolicyAnalysis,
     CoverageItem,
     ExclusionItem,
+    PolicyAnalysis,
 )
-from apps.ai_engine.llm_client import MockLLMClient
+from apps.clauses.models import Clause
+from apps.documents.models import Document, DocumentChunk, DocumentPage
+from apps.policies.models import Policy
 
 User = get_user_model()
 
@@ -297,4 +299,3 @@ class TestPolicyAnalysisAPIs:
         assert self.policy_a.status == Policy.Status.COMPLETED
         assert self.policy_a.analyzed_at is not None
         assert self.policy_a.clauses.count() == 2
-
