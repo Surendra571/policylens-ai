@@ -1,8 +1,9 @@
-from datetime import timedelta
 """Django settings for PolicyLens AI project."""
 import os
 import sys
+from datetime import timedelta
 from pathlib import Path
+
 from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.

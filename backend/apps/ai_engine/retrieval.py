@@ -1,6 +1,6 @@
 import re
 import logging
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any
 from django.db import connection
 from apps.documents.models import DocumentChunk
 from apps.policies.models import Policy

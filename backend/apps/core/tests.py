@@ -5,8 +5,6 @@ from rest_framework import status
 from apps.ai_engine.embeddings import (
     EmbeddingService,
     MockEmbeddingClient,
-    OpenAIEmbeddingClient,
-    GeminiEmbeddingClient,
 )
 
 

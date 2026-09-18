@@ -1,4 +1,5 @@
-﻿import os, sys
+﻿import os
+import sys
 from pathlib import Path
 from django.core.asgi import get_asgi_application
 

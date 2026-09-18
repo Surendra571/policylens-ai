@@ -95,7 +95,7 @@ class TestSampleHealthInsuranceRegression:
 
     def test_sample_policy_pipeline_extraction(self):
         """Verify extraction parses metadata, all 5 clause categories, financial terms, and citations."""
-        res = extract_structured_policy(document_id=str(self.document.id))
+        extract_structured_policy(document_id=str(self.document.id))
 
         self.policy.refresh_from_db()
 

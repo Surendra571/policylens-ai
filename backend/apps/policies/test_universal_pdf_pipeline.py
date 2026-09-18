@@ -173,7 +173,7 @@ class TestUniversalInsurancePipeline:
             filename="02_Motor_Private_Car.pdf",
         )
 
-        analysis = extract_structured_policy(document_id=str(doc.id))
+        extract_structured_policy(document_id=str(doc.id))
 
         policy = doc.policy
         policy.refresh_from_db()
@@ -217,7 +217,7 @@ class TestUniversalInsurancePipeline:
             filename="03_Term_Life_Protection.pdf",
         )
 
-        analysis = extract_structured_policy(document_id=str(doc.id))
+        extract_structured_policy(document_id=str(doc.id))
 
         policy = doc.policy
         policy.refresh_from_db()
@@ -253,7 +253,7 @@ class TestUniversalInsurancePipeline:
             filename="04_Travel_International.pdf",
         )
 
-        analysis = extract_structured_policy(document_id=str(doc.id))
+        extract_structured_policy(document_id=str(doc.id))
 
         policy = doc.policy
         policy.refresh_from_db()
@@ -281,7 +281,7 @@ class TestUniversalInsurancePipeline:
             filename="05_Property_Fire_Perils.pdf",
         )
 
-        analysis = extract_structured_policy(document_id=str(doc.id))
+        extract_structured_policy(document_id=str(doc.id))
 
         policy = doc.policy
         policy.refresh_from_db()

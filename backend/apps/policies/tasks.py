@@ -1,6 +1,5 @@
 import logging
 from celery import shared_task
-from django.utils import timezone
 from apps.policies.models import Policy
 from apps.ai_engine.extraction import extract_structured_policy
 from apps.ai_engine.llm_client import get_llm_client

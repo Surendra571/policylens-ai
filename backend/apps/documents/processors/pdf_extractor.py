@@ -1,5 +1,4 @@
 import logging
-import re
 from typing import List, Dict, Any, Union, Tuple
 from pathlib import Path
 import fitz  # PyMuPDF

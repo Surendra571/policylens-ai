@@ -237,7 +237,6 @@ class TestDocumentProcessingPipeline:
         extract_document_pages(str(doc.id))
         create_chunks(str(doc.id))
 
-        from apps.documents.tasks import generate_chunk_embeddings
 
         # First call generates embeddings
         count1 = generate_chunk_embeddings(str(doc.id))
